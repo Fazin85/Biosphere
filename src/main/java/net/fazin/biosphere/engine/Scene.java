@@ -1,4 +1,6 @@
-package net.fazin.biosphere;
+package net.fazin.biosphere.engine;
+
+import net.fazin.biosphere.engine.component.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +45,17 @@ public class Scene {
         return null;
     }
 
+    public <T extends Component> T getComponent(Class<T> type) {
+        for (GameObject gameObject : gameObjects) {
+            T component = gameObject.getComponent(type);
+            if (component != null) {
+                return component;
+            }
+        }
+
+        return null;
+    }
+
     public GameObject findObject(String name) {
         for (GameObject object : gameObjects) {
             if (object.getName().equals(name)) {
@@ -51,6 +64,22 @@ public class Scene {
         }
 
         return null;
+    }
+
+    public void load() {
+
+    }
+
+    public void start() {
+        gameObjects.forEach(GameObject::start);
+    }
+
+    public void unload() {
+        for (GameObject gameObject : gameObjects) {
+            gameObject.destroyed();
+        }
+
+        gameObjects.clear();
     }
 
     public List<GameObject> getGameObjects() {

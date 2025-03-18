@@ -1,4 +1,4 @@
-package net.fazin.biosphere;
+package net.fazin.biosphere.graphics;
 
 import org.joml.Vector3f;
 
@@ -9,6 +9,11 @@ public record TransparentRenderable(Vector3f position) implements IRenderable {
 
     @Override
     public void render() {
+
+    }
+
+    @Override
+    public void destroy() {
 
     }
 

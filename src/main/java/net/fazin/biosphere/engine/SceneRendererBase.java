@@ -1,4 +1,6 @@
-package net.fazin.biosphere;
+package net.fazin.biosphere.engine;
+
+import net.fazin.biosphere.graphics.ISceneRenderer;
 
 public class SceneRendererBase implements ISceneRenderer {
     private Camera activeCamera;

@@ -1,5 +1,7 @@
-package net.fazin.biosphere;
+package net.fazin.biosphere.graphics;
 
+import net.fazin.biosphere.engine.*;
+import net.fazin.biosphere.engine.component.RenderComponent;
 import org.joml.Vector3f;
 
 import java.util.List;

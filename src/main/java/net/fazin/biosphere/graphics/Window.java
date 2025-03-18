@@ -1,4 +1,4 @@
-package net.fazin.biosphere;
+package net.fazin.biosphere.graphics;
 
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.system.MemoryStack;

@@ -1,4 +1,6 @@
-package net.fazin.biosphere;
+package net.fazin.biosphere.engine.component;
+
+import net.fazin.biosphere.engine.GameObject;
 
 public abstract class Component {
     protected GameObject object;
@@ -7,7 +9,15 @@ public abstract class Component {
         this.object = object;
     }
 
+    public GameObject getObject() {
+        return object;
+    }
+
     public void created() {
+
+    }
+
+    public void start() {
 
     }
 
@@ -20,6 +30,10 @@ public abstract class Component {
     }
 
     public void destroyed() {
+
+    }
+
+    public void postDestroyed() {
 
     }
 }

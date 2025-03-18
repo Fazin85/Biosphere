@@ -1,4 +1,4 @@
-package net.fazin.biosphere;
+package net.fazin.biosphere.engine;
 
 import static org.lwjgl.glfw.GLFW.glfwGetTime;
 

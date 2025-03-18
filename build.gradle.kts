@@ -40,6 +40,8 @@ dependencies {
     runtimeOnly("org.lwjgl", "lwjgl-stb", classifier = lwjglNatives)
     runtimeOnly("org.lwjgl", "lwjgl-zstd", classifier = lwjglNatives)
     implementation("org.joml", "joml", jomlVersion)
+    implementation("com.github.stephengold:jbullet:1.0.3")
+    implementation("javax.vecmath:vecmath:1.5.2")
 }
 
 tasks.test {

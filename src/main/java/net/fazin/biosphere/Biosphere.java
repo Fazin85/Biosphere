@@ -1,12 +1,15 @@
 package net.fazin.biosphere;
 
+import net.fazin.biosphere.engine.GameTimer;
+import net.fazin.biosphere.engine.Keyboard;
+import net.fazin.biosphere.engine.Scene;
+import net.fazin.biosphere.engine.SceneManager;
+import net.fazin.biosphere.graphics.*;
 import org.joml.Vector2i;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 import static org.lwjgl.glfw.GLFW.*;
@@ -18,9 +21,6 @@ public class Biosphere {
     private GameTimer gameTimer;
     private ISceneRenderer defaultRenderer;
     private ISceneRenderer transparentRenderer;
-    private List<Scene> scenes;
-    private int activeScene;
-    private float xRot = 0.0f;
 
     private static String vector2iToString(Vector2i v) {
         return "(" + v.x + "," + v.y + ")";
@@ -69,54 +69,8 @@ public class Biosphere {
         defaultRenderer = new DefaultSceneRenderer();
         transparentRenderer = new TransparentSortingSceneRenderer();
 
-        scenes = new ArrayList<>();
-        activeScene = -1;
-
-        Scene testScene = new Scene("Test");
-
-        GameObject playerObject = new GameObject(testScene);
-        FlyController flyController = new FlyController();
-        flyController.setHandleMouseInput(true);
-        playerObject.addComponent(flyController);
-
-        GameObject cameraObject = new GameObject(testScene);
-        Camera camera = new Camera(70, window);
-        camera.setActive(true);
-        cameraObject.addComponent(camera);
-
-        playerObject.addChild(cameraObject);
-
-        testScene.addGameObject(playerObject);
-
-        float[][] heightmap = new float[16][16];
-        Random random = new Random();
-        for (int x = 0; x < 16; x++) {
-            for (int z = 0; z < 16; z++) {
-                heightmap[x][z] = random.nextFloat();
-            }
-        }
-
-        TextureAtlas textureAtlas = new TextureAtlas(new Texture("atlas.png"), 16);
-        textureAtlas.setEntry(new TextureAtlasEntry("Gravel", 2, 15));
-        textureAtlas.setEntry(new TextureAtlasEntry("Dirt", 1, 15));
-
-        Vector2i[][] textureIndices = new Vector2i[16][16];
-        for (int x = 0; x < 16; x++) {
-            for (int z = 0; z < 16; z++) {
-                textureIndices[x][z] = random.nextBoolean() ? textureAtlas.indexOfEntry("Dirt") : textureAtlas.indexOfEntry("Gravel");
-            }
-        }
-
-        HeightmapRenderer heightmapRenderer = new HeightmapRenderer(1, 16);
-        heightmapRenderer.setHeightmap(heightmap, textureIndices, textureAtlas);
-
-        GameObject heightmapObject = new GameObject(testScene);
-        heightmapObject.addComponent(new HeightmapRendererComponent(heightmapRenderer));
-
-        testScene.addGameObject(heightmapObject);
-
-        scenes.add(testScene);
-        activeScene = 0;
+        SceneManager.registerScene(new TestScene());
+        SceneManager.loadScene("Test");
 
         return true;
     }
@@ -129,25 +83,27 @@ public class Biosphere {
 
             gameTimer.update();
 
-            if (activeScene != -1) {
-                Scene scene = scenes.get(activeScene);
-
-                scene.update(gameTimer.getDt());
-            }
+            Optional<Scene> currentScene = SceneManager.getCurrentScene();
+            currentScene.ifPresent(scene -> scene.update(gameTimer.getDt()));
 
             render();
 
             window.swapBuffers();
         }
+
+        Optional<Scene> currentScene = SceneManager.getCurrentScene();
+        currentScene.ifPresent(Scene::unload);
     }
 
     private void render() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glLoadIdentity();
         glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
 
-        if (activeScene != -1) {
-            Scene scene = scenes.get(activeScene);
+        Optional<Scene> currentScene = SceneManager.getCurrentScene();
+        if (currentScene.isPresent()) {
+            Scene scene = currentScene.get();
 
             defaultRenderer.render(scene);
             transparentRenderer.render(scene);

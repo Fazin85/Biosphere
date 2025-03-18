@@ -1,5 +1,7 @@
-package net.fazin.biosphere;
+package net.fazin.biosphere.engine;
 
+import net.fazin.biosphere.graphics.DisplayList;
+import net.fazin.biosphere.graphics.IRenderable;
 import org.lwjgl.BufferUtils;
 
 import java.nio.FloatBuffer;
@@ -99,6 +101,11 @@ public class CubeRenderer implements IRenderable {
     @Override
     public void render() {
         displayList.call();
+    }
+
+    @Override
+    public void destroy() {
+        displayList.delete();
     }
 
     @Override

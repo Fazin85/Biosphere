@@ -1,5 +1,7 @@
-package net.fazin.biosphere;
+package net.fazin.biosphere.graphics;
 
+import net.fazin.biosphere.engine.*;
+import net.fazin.biosphere.engine.component.RenderComponent;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
@@ -42,8 +44,8 @@ public class TransparentSortingSceneRenderer extends SceneRendererBase {
         renderList.sort((o1, o2) -> {
             Vector3f o1p = o1.position();
             Vector3f o2p = o2.position();
-            float dist1 = Vector3f.distance(o1p.x, o1p.y, o1p.z, camera.object.getTransform().position().x, camera.object.getTransform().position().y, camera.object.getTransform().position().z);
-            float dist2 = Vector3f.distance(o2p.x, o2p.y, o2p.z, camera.object.getTransform().position().x, camera.object.getTransform().position().y, camera.object.getTransform().position().z);
+            float dist1 = Vector3f.distance(o1p.x, o1p.y, o1p.z, camera.getObject().getTransform().position().x, camera.getObject().getTransform().position().y, camera.getObject().getTransform().position().z);
+            float dist2 = Vector3f.distance(o2p.x, o2p.y, o2p.z, camera.getObject().getTransform().position().x, camera.getObject().getTransform().position().y, camera.getObject().getTransform().position().z);
 
             return Float.compare(dist2, dist1);
         });

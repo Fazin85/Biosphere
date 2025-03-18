@@ -1,5 +1,7 @@
-package net.fazin.biosphere;
+package net.fazin.biosphere.engine;
 
+import net.fazin.biosphere.engine.component.Component;
+import net.fazin.biosphere.graphics.Display;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
@@ -10,13 +12,13 @@ public class Camera extends Component {
     private final Matrix4f projectionMatrix;
     private final float[] tmp = new float[16];
     private boolean isActive;
-    private Vector3f tmpPosition = new Vector3f();
-    private Vector3f tmpRotation = new Vector3f();
+    private final Vector3f tmpPosition = new Vector3f();
+    private final Vector3f tmpRotation = new Vector3f();
 
-    public Camera(float fov, Window window) {
+    public Camera(float fov) {
         this.fov = fov;
 
-        projectionMatrix = new Matrix4f().perspective((float) Math.toRadians(fov), (float) window.getWidth() / window.getHeight(), 0.1f, 1000.0f);
+        projectionMatrix = new Matrix4f().perspective((float) Math.toRadians(fov), (float) Display.getWidth() / Display.getHeight(), 0.1f, 1000.0f);
     }
 
     public float getFov() {

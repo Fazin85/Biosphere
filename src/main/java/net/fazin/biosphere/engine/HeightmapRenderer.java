@@ -1,5 +1,9 @@
-package net.fazin.biosphere;
+package net.fazin.biosphere.engine;
 
+import net.fazin.biosphere.graphics.DisplayList;
+import net.fazin.biosphere.graphics.IRenderable;
+import net.fazin.biosphere.graphics.TextureAtlas;
+import net.fazin.biosphere.graphics.TextureAtlasUVs;
 import org.joml.Vector2i;
 import org.lwjgl.BufferUtils;
 
@@ -85,6 +89,7 @@ public class HeightmapRenderer implements IRenderable {
         {
             glEnable(GL_TEXTURE_2D);
             glColor4f(1.0f, 1.0f, 1.0f, 1.0f); // White with full opacity
+            glCullFace(GL_FRONT);
 
             textureAtlas.bind();
 
@@ -99,6 +104,7 @@ public class HeightmapRenderer implements IRenderable {
             glDisableClientState(GL_VERTEX_ARRAY);
             glDisableClientState(GL_TEXTURE_COORD_ARRAY);
             glDisable(GL_TEXTURE_2D);
+            glCullFace(GL_BACK);
         }
         displayList.end();
     }
@@ -112,6 +118,12 @@ public class HeightmapRenderer implements IRenderable {
         if (displayList != null) {
             displayList.call();
         }
+    }
+
+    @Override
+    public void destroy() {
+        displayList.delete();
+        displayList = null;
     }
 
     @Override

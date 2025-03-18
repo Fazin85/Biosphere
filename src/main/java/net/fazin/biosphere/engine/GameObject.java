@@ -1,5 +1,6 @@
-package net.fazin.biosphere;
+package net.fazin.biosphere.engine;
 
+import net.fazin.biosphere.engine.component.Component;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
@@ -15,12 +16,12 @@ public class GameObject {
     private GameObject parent;
     private String name;
 
-    protected GameObject(Scene scene) {
+    public GameObject(Scene scene) {
         this(scene, "GameObject", 0.0f, 0.0f, 0.0f);
     }
 
-    protected GameObject(Scene scene, String name, float x, float y, float z) {
-        transform = new Transform(new Vector3f(x, y, z), new Vector3f(0.0f), new Vector3f(0.0f), new Vector3f(1.0f));
+    public GameObject(Scene scene, String name, float x, float y, float z) {
+        transform = new Transform(new Vector3f(x, y, z), new Vector3f(0.0f), new Vector3f(1.0f));
         id = UUID.randomUUID();
         this.name = name;
         this.scene = scene;
@@ -106,6 +107,10 @@ public class GameObject {
         components.forEach(Component::created);
     }
 
+    public void start() {
+        components.forEach(Component::start);
+    }
+
     public void update(float dt) {
         components.forEach(component -> component.update(dt));
     }
@@ -116,5 +121,23 @@ public class GameObject {
 
     public void destroyed() {
         components.forEach(Component::destroyed);
+
+        components.forEach(Component::postDestroyed);
+
+        components.clear();
+
+        if (!children.isEmpty()) {
+            if (parent != null) {
+                for (GameObject child : children) {
+                    child.parent = parent;
+                }
+            } else {
+                for (GameObject child : children) {
+                    child.parent = null;
+                }
+            }
+        }
+
+        children.clear();
     }
 }
