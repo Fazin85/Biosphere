@@ -1,11 +1,15 @@
-package net.fazin.biosphere.graphics;
+package net.fazin.biosphere.engine.graphics;
 
-import net.fazin.biosphere.engine.*;
+import net.fazin.biosphere.engine.Camera;
+import net.fazin.biosphere.engine.GameObject;
+import net.fazin.biosphere.engine.Scene;
+import net.fazin.biosphere.engine.SceneRendererBase;
 import net.fazin.biosphere.engine.component.RenderComponent;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Logger;
 
 public class TransparentSortingSceneRenderer extends SceneRendererBase {
@@ -33,8 +37,8 @@ public class TransparentSortingSceneRenderer extends SceneRendererBase {
         renderList.clear();
 
         for (GameObject object : gameObjects) {
-            RenderComponent renderComponent = object.getComponent(RenderComponent.class);
-            if (renderComponent == null || !renderComponent.hasRenderable() || !(renderComponent.getRenderable() instanceof TransparentRenderable transparentRenderable)) {
+            Optional<RenderComponent> renderComponent = object.getComponent(RenderComponent.class);
+            if (renderComponent.isEmpty() || !renderComponent.get().hasRenderable() || !(renderComponent.get().getRenderable() instanceof TransparentRenderable transparentRenderable)) {
                 continue;
             }
 

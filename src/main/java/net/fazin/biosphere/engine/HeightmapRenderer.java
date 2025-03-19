@@ -1,9 +1,9 @@
 package net.fazin.biosphere.engine;
 
-import net.fazin.biosphere.graphics.DisplayList;
-import net.fazin.biosphere.graphics.IRenderable;
-import net.fazin.biosphere.graphics.TextureAtlas;
-import net.fazin.biosphere.graphics.TextureAtlasUVs;
+import net.fazin.biosphere.engine.graphics.DisplayList;
+import net.fazin.biosphere.engine.graphics.IRenderable;
+import net.fazin.biosphere.engine.graphics.TextureAtlas;
+import net.fazin.biosphere.engine.graphics.TextureAtlasUVs;
 import org.joml.Vector2i;
 import org.lwjgl.BufferUtils;
 

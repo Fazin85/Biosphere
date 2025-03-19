@@ -1,4 +1,4 @@
-package net.fazin.biosphere.graphics;
+package net.fazin.biosphere.engine.graphics;
 
 import org.joml.Vector2d;
 import org.lwjgl.glfw.GLFW;

@@ -1,10 +1,14 @@
-package net.fazin.biosphere.graphics;
+package net.fazin.biosphere.engine.graphics;
 
-import net.fazin.biosphere.engine.*;
+import net.fazin.biosphere.engine.Camera;
+import net.fazin.biosphere.engine.GameObject;
+import net.fazin.biosphere.engine.Scene;
+import net.fazin.biosphere.engine.SceneRendererBase;
 import net.fazin.biosphere.engine.component.RenderComponent;
 import org.joml.Vector3f;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -38,8 +42,8 @@ public class DefaultSceneRenderer extends SceneRendererBase {
             }
         }
 
-        RenderComponent renderComponent = object.getComponent(RenderComponent.class);
-        if (renderComponent == null || !renderComponent.hasRenderable() || renderComponent.getRenderable().transparent()) {
+        Optional<RenderComponent> renderComponent = object.getComponent(RenderComponent.class);
+        if (renderComponent.isEmpty() || !renderComponent.get().hasRenderable() || renderComponent.get().getRenderable().transparent()) {
             return;
         }
 
@@ -56,7 +60,7 @@ public class DefaultSceneRenderer extends SceneRendererBase {
             Vector3f scale = object.getTransform().scale();
             glScalef(scale.x, scale.y, scale.z);
 
-            renderComponent.getRenderable().render();
+            renderComponent.get().getRenderable().render();
         }
         glPopMatrix();
     }

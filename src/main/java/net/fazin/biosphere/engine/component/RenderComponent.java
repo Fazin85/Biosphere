@@ -1,6 +1,6 @@
 package net.fazin.biosphere.engine.component;
 
-import net.fazin.biosphere.graphics.IRenderable;
+import net.fazin.biosphere.engine.graphics.IRenderable;
 
 public class RenderComponent extends Component {
     private IRenderable renderable;

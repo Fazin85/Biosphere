@@ -5,10 +5,10 @@ import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public class GameObject {
-    private final Scene scene;
     private final UUID id;
     private final List<Component> components = new ArrayList<>();
     private final Transform transform;
@@ -16,43 +16,38 @@ public class GameObject {
     private GameObject parent;
     private String name;
 
-    public GameObject(Scene scene) {
-        this(scene, "GameObject", 0.0f, 0.0f, 0.0f);
+    public GameObject() {
+        this("GameObject", 0.0f, 0.0f, 0.0f);
     }
 
-    public GameObject(Scene scene, String name, float x, float y, float z) {
+    public GameObject(String name, float x, float y, float z) {
         transform = new Transform(new Vector3f(x, y, z), new Vector3f(0.0f), new Vector3f(1.0f));
         id = UUID.randomUUID();
         this.name = name;
-        this.scene = scene;
 
         children = new ArrayList<>();
     }
 
-    public static <T extends Component> T getComponentInChildren(Class<T> type, GameObject gameObject) {
-        T component = gameObject.getComponent(type);
+    public static <T extends Component> Optional<T> getComponentInChildren(Class<T> type, GameObject gameObject) {
+        Optional<T> component = gameObject.getComponent(type);
 
-        if (component != null) {
+        if (component.isPresent()) {
             return component;
         }
 
         for (GameObject gameObject1 : gameObject.children) {
             component = getComponentInChildren(type, gameObject1);
 
-            if (component != null) {
+            if (component.isPresent()) {
                 return component;
             }
         }
 
-        return null;
+        return Optional.empty();
     }
 
-    public <T extends Component> T getComponentInChildren(Class<T> type) {
+    public <T extends Component> Optional<T> getComponentInChildren(Class<T> type) {
         return getComponentInChildren(type, this);
-    }
-
-    public Scene getScene() {
-        return scene;
     }
 
     public GameObject getParent() {
@@ -77,14 +72,14 @@ public class GameObject {
         components.add(component);
     }
 
-    public <T extends Component> T getComponent(Class<T> type) {
+    public <T extends Component> Optional<T> getComponent(Class<T> type) {
         for (Component component : components) {
             if (type.isInstance(component)) {
-                return type.cast(component);
+                return Optional.of(type.cast(component));
             }
         }
 
-        return null;
+        return Optional.empty();
     }
 
     public String getName() {

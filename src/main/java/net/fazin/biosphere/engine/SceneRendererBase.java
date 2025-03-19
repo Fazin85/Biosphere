@@ -1,6 +1,8 @@
 package net.fazin.biosphere.engine;
 
-import net.fazin.biosphere.graphics.ISceneRenderer;
+import net.fazin.biosphere.engine.graphics.ISceneRenderer;
+
+import java.util.Optional;
 
 public class SceneRendererBase implements ISceneRenderer {
     private Camera activeCamera;
@@ -12,12 +14,12 @@ public class SceneRendererBase implements ISceneRenderer {
     }
 
     private void tryGetCameraRecursive(GameObject gameObject) {
-        Camera camera;
+        Optional<Camera> camera;
 
         camera = gameObject.getComponent(Camera.class);
 
-        if (camera != null && camera.isActive()) {
-            activeCamera = camera;
+        if (camera.isPresent() && camera.get().isActive()) {
+            activeCamera = camera.get();
         } else {
             for (GameObject child : gameObject.getChildren()) {
                 tryGetCameraRecursive(child);

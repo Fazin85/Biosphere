@@ -1,7 +1,7 @@
 package net.fazin.biosphere.engine;
 
 import net.fazin.biosphere.engine.component.Component;
-import net.fazin.biosphere.graphics.Display;
+import net.fazin.biosphere.engine.graphics.Display;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 

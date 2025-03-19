@@ -34,12 +34,12 @@ public class RigidBodyComponent extends Component {
         }
 
         Scene currentScene = currentSceneOptional.get();
-        DiscreteDynamicsWorldComponent physicsWorldComponent = currentScene.getComponent(DiscreteDynamicsWorldComponent.class);
-        if (physicsWorldComponent == null) {
+        Optional<DiscreteDynamicsWorldComponent> physicsWorldComponent = currentScene.getComponent(DiscreteDynamicsWorldComponent.class);
+        if (physicsWorldComponent.isEmpty()) {
             LOGGER.severe("Failed to get DiscreteDynamicsWorldComponent from scene: " + currentScene.getName());
             return;
         }
-        physicsWorld = physicsWorldComponent;
+        physicsWorld = physicsWorldComponent.get();
 
         Vector3f inertia = new Vector3f(0.0f, 0.0f, 0.0f);
         if (mass > 0.0f) {
@@ -52,7 +52,7 @@ public class RigidBodyComponent extends Component {
         RigidBodyConstructionInfo rbInfo = new RigidBodyConstructionInfo(mass, motionState, shape, inertia);
 
         rigidBody = new RigidBody(rbInfo);
-        physicsWorldComponent.addRigidBody(this);
+        physicsWorldComponent.get().addRigidBody(this);
     }
 
     @Override

@@ -4,6 +4,7 @@ import net.fazin.biosphere.engine.component.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public class Scene {
@@ -45,15 +46,15 @@ public class Scene {
         return null;
     }
 
-    public <T extends Component> T getComponent(Class<T> type) {
+    public <T extends Component> Optional<T> getComponent(Class<T> type) {
         for (GameObject gameObject : gameObjects) {
-            T component = gameObject.getComponent(type);
-            if (component != null) {
+            Optional<T> component = gameObject.getComponent(type);
+            if (component.isPresent()) {
                 return component;
             }
         }
 
-        return null;
+        return Optional.empty();
     }
 
     public GameObject findObject(String name) {

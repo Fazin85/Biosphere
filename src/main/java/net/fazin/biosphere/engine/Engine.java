@@ -1,30 +1,23 @@
-package net.fazin.biosphere;
+package net.fazin.biosphere.engine;
 
-import net.fazin.biosphere.engine.GameTimer;
-import net.fazin.biosphere.engine.Keyboard;
-import net.fazin.biosphere.engine.Scene;
-import net.fazin.biosphere.engine.SceneManager;
-import net.fazin.biosphere.graphics.*;
-import org.joml.Vector2i;
+import net.fazin.biosphere.engine.graphics.*;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.logging.Logger;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 
-public class Biosphere {
-    private static final Logger LOGGER = Logger.getLogger(Biosphere.class.getName());
+public class Engine {
+    private static final Logger LOGGER = Logger.getLogger(Engine.class.getName());
     private Window window;
     private GameTimer gameTimer;
     private ISceneRenderer defaultRenderer;
     private ISceneRenderer transparentRenderer;
-
-    private static String vector2iToString(Vector2i v) {
-        return "(" + v.x + "," + v.y + ")";
-    }
+    private Scene startupScene;
 
     public void run() {
         if (!init()) {
@@ -34,7 +27,12 @@ public class Biosphere {
         onClose();
 
         glfwTerminate();
-        glfwSetErrorCallback(null).free();
+
+        Objects.requireNonNull(glfwSetErrorCallback(null)).free();
+    }
+
+    public void setStartupScene(Scene scene) {
+        this.startupScene = scene;
     }
 
     private boolean init() {
@@ -69,8 +67,13 @@ public class Biosphere {
         defaultRenderer = new DefaultSceneRenderer();
         transparentRenderer = new TransparentSortingSceneRenderer();
 
-        SceneManager.registerScene(new TestScene());
-        SceneManager.loadScene("Test");
+        if (startupScene != null) {
+            SceneManager.registerScene(startupScene);
+            SceneManager.loadScene(startupScene.getName());
+        } else {
+            LOGGER.severe("No startup scene was set");
+            return false;
+        }
 
         return true;
     }
@@ -83,8 +86,12 @@ public class Biosphere {
 
             gameTimer.update();
 
-            Optional<Scene> currentScene = SceneManager.getCurrentScene();
-            currentScene.ifPresent(scene -> scene.update(gameTimer.getDt()));
+            try {
+                Optional<Scene> currentScene = SceneManager.getCurrentScene();
+                currentScene.ifPresent(scene -> scene.update(gameTimer.getDt()));
+            } catch (Exception e) {
+                LOGGER.severe(e.toString());
+            }
 
             render();
 

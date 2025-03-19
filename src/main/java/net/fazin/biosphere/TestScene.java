@@ -6,9 +6,9 @@ import net.fazin.biosphere.engine.*;
 import net.fazin.biosphere.engine.component.DiscreteDynamicsWorldComponent;
 import net.fazin.biosphere.engine.component.RenderComponent;
 import net.fazin.biosphere.engine.component.RigidBodyComponent;
-import net.fazin.biosphere.graphics.Texture;
-import net.fazin.biosphere.graphics.TextureAtlas;
-import net.fazin.biosphere.graphics.TextureAtlasEntry;
+import net.fazin.biosphere.engine.graphics.Texture;
+import net.fazin.biosphere.engine.graphics.TextureAtlas;
+import net.fazin.biosphere.engine.graphics.TextureAtlasEntry;
 import org.joml.Vector2i;
 import org.joml.Vector3f;
 
@@ -30,7 +30,7 @@ public class TestScene extends Scene {
     }
 
     private void addPhysicsWorld() {
-        GameObject physicsWorld = new GameObject(this);
+        GameObject physicsWorld = new GameObject();
         DiscreteDynamicsWorldComponent dynamicsWorldComponent = new DiscreteDynamicsWorldComponent(new Vector3f(0.0f, -150.0f, 0.0f));
         physicsWorld.addComponent(dynamicsWorldComponent);
 
@@ -38,7 +38,7 @@ public class TestScene extends Scene {
     }
 
     private void addFloor() {
-        GameObject floor = new GameObject(this);
+        GameObject floor = new GameObject();
 
         RigidBodyComponent rigidBodyComponent = new RigidBodyComponent(new BoxShape(new javax.vecmath.Vector3f(50.0f, 1.0f, 50.0f)), 0.0f);
         floor.addComponent(rigidBodyComponent);
@@ -50,15 +50,15 @@ public class TestScene extends Scene {
     }
 
     private void addPlayer() {
-        GameObject cameraObject = new GameObject(this);
+        GameObject cameraObject = new GameObject();
         Camera camera = new Camera(70);
         camera.setActive(true);
         cameraObject.addComponent(camera);
 
-        GameObject playerObject = new GameObject(this);
-        FlyController flyController = new FlyController(cameraObject);
-        flyController.setHandleMouseInput(true);
-        playerObject.addComponent(flyController);
+        GameObject playerObject = new GameObject();
+        CharacterController characterController = new CharacterController(cameraObject);
+        characterController.setHandleMouseInput(true);
+        playerObject.addComponent(characterController);
 
         playerObject.addChild(cameraObject);
 
@@ -96,7 +96,7 @@ public class TestScene extends Scene {
         HeightmapRenderer heightmapRenderer = new HeightmapRenderer(1, 16);
         heightmapRenderer.setHeightmap(heightmap, textureIndices, textureAtlas);
 
-        GameObject heightmapObject = new GameObject(this);
+        GameObject heightmapObject = new GameObject();
         heightmapObject.addComponent(new RenderComponent(heightmapRenderer));
 
         addGameObject(heightmapObject);

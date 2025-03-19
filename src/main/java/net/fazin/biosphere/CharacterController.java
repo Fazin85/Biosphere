@@ -1,6 +1,7 @@
 package net.fazin.biosphere;
 
 import com.bulletphysics.collision.dispatch.CollisionObject;
+import com.bulletphysics.collision.dispatch.CollisionWorld;
 import com.bulletphysics.collision.shapes.BoxShape;
 import com.bulletphysics.dynamics.RigidBody;
 import com.bulletphysics.dynamics.RigidBodyConstructionInfo;
@@ -13,7 +14,8 @@ import net.fazin.biosphere.engine.SceneManager;
 import net.fazin.biosphere.engine.component.Component;
 import net.fazin.biosphere.engine.component.DiscreteDynamicsWorldComponent;
 import net.fazin.biosphere.engine.component.RigidBodyComponent;
-import net.fazin.biosphere.graphics.Display;
+import net.fazin.biosphere.engine.graphics.Display;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Vector2d;
 import org.joml.Vector3f;
 
@@ -22,16 +24,23 @@ import java.util.logging.Logger;
 
 import static org.lwjgl.glfw.GLFW.*;
 
-public class FlyController extends Component {
-    private static final Logger LOGGER = Logger.getLogger(FlyController.class.getName());
+public class CharacterController extends Component {
+    private static final Logger LOGGER = Logger.getLogger(CharacterController.class.getName());
+    private final Transform tmpTransform;
     private final GameObject cameraObject;
+    private RigidBody anchorBody;
+    private RigidBodyComponent rigidBodyComponent;
+    private DiscreteDynamicsWorldComponent physicsWorldComponent;
     private float yaw;
     private float pitch;
     private boolean handleMouseInput;
+    private boolean isGrounded;
 
-    public FlyController(GameObject cameraObject) {
+    public CharacterController(GameObject cameraObject) {
+        tmpTransform = new Transform();
         handleMouseInput = false;
         this.cameraObject = cameraObject;
+        isGrounded = false;
     }
 
     public void setHandleMouseInput(boolean handleMouseInput) {
@@ -44,37 +53,35 @@ public class FlyController extends Component {
 
     @Override
     public void start() {
-        Optional<Scene> currentSceneOptional = SceneManager.getCurrentScene();
-        if (currentSceneOptional.isEmpty()) {
-            LOGGER.info("Failed to get current scene");
+        Optional<DiscreteDynamicsWorldComponent> physicsWorldComponentOptional = getDiscreteDynamicsWorldComponent();
+        if (physicsWorldComponentOptional.isEmpty()) {
             return;
         }
 
-        Scene currentScene = currentSceneOptional.get();
-        DiscreteDynamicsWorldComponent physicsWorldComponent = currentScene.getComponent(DiscreteDynamicsWorldComponent.class);
-        if (physicsWorldComponent == null) {
-            LOGGER.severe("Failed to get physicsWorldComponent");
+        physicsWorldComponent = physicsWorldComponentOptional.get();
+
+        Optional<RigidBodyComponent> rigidBodyComponentOptional = object.getComponent(RigidBodyComponent.class);
+        if (rigidBodyComponentOptional.isEmpty()) {
+            LOGGER.severe("Failed to get RigidBodyComponent");
             return;
         }
+
+        rigidBodyComponent = rigidBodyComponentOptional.get();
+        rigidBodyComponent.getRigidBody().setActivationState(CollisionObject.DISABLE_DEACTIVATION);
 
         addPhysicsConstraint(physicsWorldComponent);
-
-        RigidBodyComponent rigidBodyComponent = object.getComponent(RigidBodyComponent.class);
-        rigidBodyComponent.getRigidBody().setActivationState(CollisionObject.DISABLE_DEACTIVATION);
     }
 
+    @NotNull
     private RigidBody createAnchorBody() {
         BoxShape anchorShape = new BoxShape(new javax.vecmath.Vector3f(0.1f, 0.1f, 0.1f));
-        Transform anchorTransform = new Transform();
-        anchorTransform.setIdentity();
-        anchorTransform.origin.set(0.0f, 0.0f, 0.0f);
         RigidBodyConstructionInfo anchorInfo = new RigidBodyConstructionInfo(0.0f, null, anchorShape, new javax.vecmath.Vector3f(0.0f, 0.0f, 0.0f));
 
         return new RigidBody(anchorInfo);
     }
 
     private void addPhysicsConstraint(DiscreteDynamicsWorldComponent physicsWorldComponent) {
-        RigidBody anchorBody = createAnchorBody();
+        anchorBody = createAnchorBody();
         physicsWorldComponent.getWorld().addRigidBody(anchorBody);
 
         Transform anchorConstrainTransform = new Transform();
@@ -82,14 +89,37 @@ public class FlyController extends Component {
         anchorConstrainTransform.setIdentity();
         playerTransform.setIdentity();
 
-        Generic6DofConstraint constraint = new Generic6DofConstraint(anchorBody, object.getComponent(RigidBodyComponent.class).getRigidBody(), anchorConstrainTransform, playerTransform, true);
+        Generic6DofConstraint constraint = getGeneric6DofConstraint(anchorBody, anchorConstrainTransform, playerTransform);
+
+        physicsWorldComponent.getWorld().addConstraint(constraint);
+    }
+
+    @NotNull
+    private Optional<DiscreteDynamicsWorldComponent> getDiscreteDynamicsWorldComponent() {
+        Optional<Scene> currentSceneOptional = SceneManager.getCurrentScene();
+        if (currentSceneOptional.isEmpty()) {
+            LOGGER.info("Failed to get current scene");
+            return Optional.empty();
+        }
+
+        Scene currentScene = currentSceneOptional.get();
+        Optional<DiscreteDynamicsWorldComponent> physicsWorldComponentOptional = currentScene.getComponent(DiscreteDynamicsWorldComponent.class);
+        if (physicsWorldComponentOptional.isEmpty()) {
+            LOGGER.severe("Failed to get physicsWorldComponent");
+        }
+
+        return physicsWorldComponentOptional;
+    }
+
+    @NotNull
+    private Generic6DofConstraint getGeneric6DofConstraint(RigidBody anchorBody, Transform anchorConstrainTransform, Transform playerTransform) {
+        Generic6DofConstraint constraint = new Generic6DofConstraint(anchorBody, rigidBodyComponent.getRigidBody(), anchorConstrainTransform, playerTransform, true);
 
         constraint.setAngularLowerLimit(new javax.vecmath.Vector3f(0.0f, 0.0f, 0.0f));
         constraint.setAngularUpperLimit(new javax.vecmath.Vector3f(0.0f, 0.0f, 0.0f));
         constraint.setLinearLowerLimit(new javax.vecmath.Vector3f(-Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE));
         constraint.setLinearUpperLimit(new javax.vecmath.Vector3f(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE));
-
-        physicsWorldComponent.getWorld().addConstraint(constraint);
+        return constraint;
     }
 
     @Override
@@ -110,8 +140,9 @@ public class FlyController extends Component {
             cameraObject.getTransform().rotation().y = yaw;
         }
 
+        groundRayCast(1f);
+
         Vector3f velocity = new Vector3f();
-        RigidBodyComponent rigidBodyComponent = object.getComponent(RigidBodyComponent.class);
 
         float speed = 5.0f;
         if (Keyboard.isKeyPressed(GLFW_KEY_W)) {
@@ -130,10 +161,34 @@ public class FlyController extends Component {
             velocity.x += (float) (Math.cos(Math.toRadians(yaw)) * speed);
             velocity.z += (float) (Math.sin(Math.toRadians(yaw)) * speed);
         }
-        if (Keyboard.isKeyPressed(GLFW_KEY_SPACE)) {
-            rigidBodyComponent.getRigidBody().applyCentralForce(new javax.vecmath.Vector3f(0.0f, 5f, 0.0f));
+        if (Keyboard.isKeyPressed(GLFW_KEY_SPACE) && isGrounded) {
+
+            //velocity.y += 50.0f;
         }
 
         rigidBodyComponent.getRigidBody().setLinearVelocity(new javax.vecmath.Vector3f(velocity.x, velocity.y, velocity.z));
+    }
+
+    private void groundRayCast(float rayCastDistance) {
+        if (physicsWorldComponent == null) {
+            return;
+        }
+
+        rigidBodyComponent.getRigidBody().getWorldTransform(tmpTransform);
+
+        javax.vecmath.Vector3f from = tmpTransform.origin;
+        javax.vecmath.Vector3f to = new javax.vecmath.Vector3f(from.x, from.y - rayCastDistance, from.z);
+
+        CollisionWorld.ClosestRayResultCallback callback = new CollisionWorld.ClosestRayResultCallback(from, to);
+        physicsWorldComponent.getWorld().rayTest(from, to, callback);
+
+        isGrounded = callback.hasHit();
+    }
+
+    @Override
+    public void destroyed() {
+        if (physicsWorldComponent != null) {
+            physicsWorldComponent.getWorld().removeRigidBody(anchorBody);
+        }
     }
 }
