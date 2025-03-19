@@ -1,54 +1,39 @@
 package net.fazin.biosphere;
 
-import com.bulletphysics.collision.dispatch.CollisionObject;
+import com.bulletphysics.collision.dispatch.CollisionFlags;
 import com.bulletphysics.collision.dispatch.CollisionWorld;
-import com.bulletphysics.collision.shapes.BoxShape;
-import com.bulletphysics.dynamics.RigidBody;
-import com.bulletphysics.dynamics.RigidBodyConstructionInfo;
-import com.bulletphysics.dynamics.constraintsolver.Generic6DofConstraint;
+import com.bulletphysics.collision.dispatch.PairCachingGhostObject;
+import com.bulletphysics.collision.narrowphase.ManifoldPoint;
+import com.bulletphysics.collision.narrowphase.PersistentManifold;
+import com.bulletphysics.collision.shapes.CapsuleShape;
 import com.bulletphysics.linearmath.Transform;
 import net.fazin.biosphere.engine.GameObject;
-import net.fazin.biosphere.engine.Keyboard;
 import net.fazin.biosphere.engine.Scene;
 import net.fazin.biosphere.engine.SceneManager;
 import net.fazin.biosphere.engine.component.Component;
 import net.fazin.biosphere.engine.component.DiscreteDynamicsWorldComponent;
-import net.fazin.biosphere.engine.component.RigidBodyComponent;
-import net.fazin.biosphere.engine.graphics.Display;
 import org.jetbrains.annotations.NotNull;
-import org.joml.Vector2d;
-import org.joml.Vector3f;
 
+import javax.vecmath.Vector3f;
 import java.util.Optional;
 import java.util.logging.Logger;
-
-import static org.lwjgl.glfw.GLFW.*;
 
 public class CharacterController extends Component {
     private static final Logger LOGGER = Logger.getLogger(CharacterController.class.getName());
     private final Transform tmpTransform;
     private final GameObject cameraObject;
-    private RigidBody anchorBody;
-    private RigidBodyComponent rigidBodyComponent;
     private DiscreteDynamicsWorldComponent physicsWorldComponent;
-    private float yaw;
-    private float pitch;
-    private boolean handleMouseInput;
+    private PairCachingGhostObject ghostObject;
+    private Vector3f velocity;
+    private Vector3f acceleration;
     private boolean isGrounded;
 
     public CharacterController(GameObject cameraObject) {
         tmpTransform = new Transform();
-        handleMouseInput = false;
         this.cameraObject = cameraObject;
         isGrounded = false;
-    }
-
-    public void setHandleMouseInput(boolean handleMouseInput) {
-        this.handleMouseInput = handleMouseInput;
-    }
-
-    public boolean handleMouseInput() {
-        return handleMouseInput;
+        velocity = new Vector3f();
+        acceleration = new Vector3f();
     }
 
     @Override
@@ -60,38 +45,12 @@ public class CharacterController extends Component {
 
         physicsWorldComponent = physicsWorldComponentOptional.get();
 
-        Optional<RigidBodyComponent> rigidBodyComponentOptional = object.getComponent(RigidBodyComponent.class);
-        if (rigidBodyComponentOptional.isEmpty()) {
-            LOGGER.severe("Failed to get RigidBodyComponent");
-            return;
-        }
-
-        rigidBodyComponent = rigidBodyComponentOptional.get();
-        rigidBodyComponent.getRigidBody().setActivationState(CollisionObject.DISABLE_DEACTIVATION);
-
-        addPhysicsConstraint(physicsWorldComponent);
-    }
-
-    @NotNull
-    private RigidBody createAnchorBody() {
-        BoxShape anchorShape = new BoxShape(new javax.vecmath.Vector3f(0.1f, 0.1f, 0.1f));
-        RigidBodyConstructionInfo anchorInfo = new RigidBodyConstructionInfo(0.0f, null, anchorShape, new javax.vecmath.Vector3f(0.0f, 0.0f, 0.0f));
-
-        return new RigidBody(anchorInfo);
-    }
-
-    private void addPhysicsConstraint(DiscreteDynamicsWorldComponent physicsWorldComponent) {
-        anchorBody = createAnchorBody();
-        physicsWorldComponent.getWorld().addRigidBody(anchorBody);
-
-        Transform anchorConstrainTransform = new Transform();
-        Transform playerTransform = new Transform();
-        anchorConstrainTransform.setIdentity();
-        playerTransform.setIdentity();
-
-        Generic6DofConstraint constraint = getGeneric6DofConstraint(anchorBody, anchorConstrainTransform, playerTransform);
-
-        physicsWorldComponent.getWorld().addConstraint(constraint);
+        ghostObject = new PairCachingGhostObject();
+        ghostObject.setCollisionShape(new CapsuleShape(0.5f, 1.0f));
+        ghostObject.setCollisionFlags(ghostObject.getCollisionFlags() | CollisionFlags.KINEMATIC_OBJECT);
+        physicsWorldComponent.getWorld().addCollisionObject(ghostObject);
+        Transform transform = net.fazin.biosphere.engine.Transform.toBulletTransform(object.getTransform());
+        ghostObject.setWorldTransform(transform);
     }
 
     @NotNull
@@ -111,62 +70,36 @@ public class CharacterController extends Component {
         return physicsWorldComponentOptional;
     }
 
-    @NotNull
-    private Generic6DofConstraint getGeneric6DofConstraint(RigidBody anchorBody, Transform anchorConstrainTransform, Transform playerTransform) {
-        Generic6DofConstraint constraint = new Generic6DofConstraint(anchorBody, rigidBodyComponent.getRigidBody(), anchorConstrainTransform, playerTransform, true);
+    public void setAcceleration(float x, float y, float z) {
+        acceleration.set(x, y, z);
+    }
 
-        constraint.setAngularLowerLimit(new javax.vecmath.Vector3f(0.0f, 0.0f, 0.0f));
-        constraint.setAngularUpperLimit(new javax.vecmath.Vector3f(0.0f, 0.0f, 0.0f));
-        constraint.setLinearLowerLimit(new javax.vecmath.Vector3f(-Float.MAX_VALUE, -Float.MAX_VALUE, -Float.MAX_VALUE));
-        constraint.setLinearUpperLimit(new javax.vecmath.Vector3f(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE));
-        return constraint;
+    public boolean isGrounded() {
+        return isGrounded;
     }
 
     @Override
-    public void update(float dt) {
-        handleMouseInput = Display.isFocused();
+    public void fixedUpdate() {
+        groundRayCast(1.0f);
 
-        if (handleMouseInput) {
-            Vector2d cursorPosition = Display.getCursorPosition();
+        velocity.add(acceleration);
 
-            yaw += (float) (cursorPosition.x - (Display.getWidth() / 2.0f)) * 0.1f; // Adjust sensitivity
-            pitch += (float) (cursorPosition.y - (Display.getHeight() / 2.0f)) * 0.1f;
+        velocity.sub(new javax.vecmath.Vector3f(0.0f, 0.05f, 0.0f));
 
-            Display.setCursorPosition(new Vector2d(Display.getWidth() / 2.0, Display.getHeight() / 2.0));
+        acceleration.set(0.0f, 0.0f, 0.0f);
 
-            pitch = Math.clamp(pitch, -90.0f, 90.0f);
+        velocity.scale(0.8f);
 
-            cameraObject.getTransform().rotation().x = pitch;
-            cameraObject.getTransform().rotation().y = yaw;
-        }
+        Transform transform = new Transform();
+        transform.setIdentity();
+        ghostObject.getWorldTransform(transform);
+        javax.vecmath.Vector3f velocity2 = new javax.vecmath.Vector3f(velocity.x, velocity.y, velocity.z);
 
-        groundRayCast(1f);
+        calculateSlidingMovement(velocity2);
+        transform.origin.add(velocity2);
 
-        Vector3f velocity = new Vector3f();
-
-        float speed = 5.0f;
-        if (Keyboard.isKeyPressed(GLFW_KEY_W)) {
-            velocity.x += (float) (Math.sin(Math.toRadians(yaw)) * speed);
-            velocity.z -= (float) (Math.cos(Math.toRadians(yaw)) * speed);
-        }
-        if (Keyboard.isKeyPressed(GLFW_KEY_S)) {
-            velocity.x -= (float) (Math.sin(Math.toRadians(yaw)) * speed);
-            velocity.z += (float) (Math.cos(Math.toRadians(yaw)) * speed);
-        }
-        if (Keyboard.isKeyPressed(GLFW_KEY_A)) {
-            velocity.x -= (float) (Math.cos(Math.toRadians(yaw)) * speed);
-            velocity.z -= (float) (Math.sin(Math.toRadians(yaw)) * speed);
-        }
-        if (Keyboard.isKeyPressed(GLFW_KEY_D)) {
-            velocity.x += (float) (Math.cos(Math.toRadians(yaw)) * speed);
-            velocity.z += (float) (Math.sin(Math.toRadians(yaw)) * speed);
-        }
-        if (Keyboard.isKeyPressed(GLFW_KEY_SPACE) && isGrounded) {
-
-            //velocity.y += 50.0f;
-        }
-
-        rigidBodyComponent.getRigidBody().setLinearVelocity(new javax.vecmath.Vector3f(velocity.x, velocity.y, velocity.z));
+        ghostObject.setWorldTransform(transform);
+        object.getTransform().position().set(transform.origin.x, transform.origin.y, transform.origin.z);
     }
 
     private void groundRayCast(float rayCastDistance) {
@@ -174,7 +107,7 @@ public class CharacterController extends Component {
             return;
         }
 
-        rigidBodyComponent.getRigidBody().getWorldTransform(tmpTransform);
+        ghostObject.getWorldTransform(tmpTransform);
 
         javax.vecmath.Vector3f from = tmpTransform.origin;
         javax.vecmath.Vector3f to = new javax.vecmath.Vector3f(from.x, from.y - rayCastDistance, from.z);
@@ -185,10 +118,37 @@ public class CharacterController extends Component {
         isGrounded = callback.hasHit();
     }
 
+    //desiredMovement should be scaled by dt
+    private void calculateSlidingMovement(javax.vecmath.Vector3f desiredMovement) {
+        for (int i = 0; i < physicsWorldComponent.getWorld().getDispatcher().getNumManifolds(); i++) {
+            PersistentManifold manifold = physicsWorldComponent.getWorld().getDispatcher().getManifoldByIndexInternal(i);
+
+            if (manifold.getBody0() == ghostObject || manifold.getBody1() == ghostObject) {
+                for (int j = 0; j < manifold.getNumContacts(); j++) {
+                    ManifoldPoint contactPoint = manifold.getContactPoint(j);
+
+                    if (contactPoint.getDistance() < 0.0f) {
+                        javax.vecmath.Vector3f collisionNormal = new javax.vecmath.Vector3f(contactPoint.normalWorldOnB);
+                        if (manifold.getBody1() == ghostObject) {
+                            collisionNormal.negate();
+                        }
+
+                        float dotProduct = desiredMovement.dot(collisionNormal);
+                        if (dotProduct < 0.0f) {
+                            javax.vecmath.Vector3f projection = new javax.vecmath.Vector3f(collisionNormal);
+                            projection.scale(dotProduct);
+                            desiredMovement.sub(projection);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     @Override
     public void destroyed() {
         if (physicsWorldComponent != null) {
-            physicsWorldComponent.getWorld().removeRigidBody(anchorBody);
+            physicsWorldComponent.getWorld().removeCollisionObject(ghostObject);
         }
     }
 }

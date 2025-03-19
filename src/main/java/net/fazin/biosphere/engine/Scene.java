@@ -31,6 +31,12 @@ public class Scene {
         }
     }
 
+    public void fixedUpdate() {
+        for(GameObject gameObject : gameObjects) {
+            gameObject.fixedUpdate();
+        }
+    }
+
     public void destroyGameObject(GameObject object) {
         object.destroyed();
         gameObjects.remove(object);

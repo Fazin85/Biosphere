@@ -52,6 +52,11 @@ public class RigidBodyComponent extends Component {
         RigidBodyConstructionInfo rbInfo = new RigidBodyConstructionInfo(mass, motionState, shape, inertia);
 
         rigidBody = new RigidBody(rbInfo);
+
+        if (mass == 0.0f) {
+            rigidBody.setCollisionFlags(0);
+        }
+
         physicsWorldComponent.get().addRigidBody(this);
     }
 

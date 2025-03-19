@@ -57,8 +57,8 @@ public class TestScene extends Scene {
 
         GameObject playerObject = new GameObject();
         CharacterController characterController = new CharacterController(cameraObject);
-        characterController.setHandleMouseInput(true);
         playerObject.addComponent(characterController);
+        playerObject.addComponent(new BiospherePlayerController(cameraObject));
 
         playerObject.addChild(cameraObject);
 
@@ -68,7 +68,7 @@ public class TestScene extends Scene {
         capsuleShape.setMargin(0.01f);
 
         RigidBodyComponent playerCollider = new RigidBodyComponent(capsuleShape, 1.0f);
-        playerObject.addComponent(playerCollider);
+        //playerObject.addComponent(playerCollider);
 
         addGameObject(playerObject);
     }

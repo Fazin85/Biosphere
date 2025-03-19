@@ -79,12 +79,22 @@ public class Engine {
     }
 
     private void loop() {
+        float accumulator = 0.0f;
+
         while (!window.shouldClose()) {
             window.poll();
 
             Keyboard.update();
 
             gameTimer.update();
+
+            accumulator += gameTimer.getDt();
+
+            if (accumulator >= 0.016f) {
+                Optional<Scene> currentScene = SceneManager.getCurrentScene();
+                currentScene.ifPresent(Scene::fixedUpdate);
+                accumulator = 0.0f;
+            }
 
             try {
                 Optional<Scene> currentScene = SceneManager.getCurrentScene();

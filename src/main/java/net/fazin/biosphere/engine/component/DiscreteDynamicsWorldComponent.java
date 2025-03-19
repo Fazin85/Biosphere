@@ -1,7 +1,6 @@
 package net.fazin.biosphere.engine.component;
 
 import com.bulletphysics.collision.broadphase.DbvtBroadphase;
-import com.bulletphysics.collision.dispatch.CollisionDispatcher;
 import com.bulletphysics.collision.dispatch.DefaultCollisionConfiguration;
 import com.bulletphysics.dynamics.DiscreteDynamicsWorld;
 import com.bulletphysics.dynamics.constraintsolver.SequentialImpulseConstraintSolver;
@@ -12,9 +11,8 @@ public class DiscreteDynamicsWorldComponent extends Component {
 
     public DiscreteDynamicsWorldComponent(Vector3f gravity) {
         DefaultCollisionConfiguration collisionConfiguration = new DefaultCollisionConfiguration();
-        CollisionDispatcher dispatcher = new CollisionDispatcher(collisionConfiguration);
 
-        world = new DiscreteDynamicsWorld(dispatcher, new DbvtBroadphase(), new SequentialImpulseConstraintSolver(), collisionConfiguration);
+        world = new DiscreteDynamicsWorld(new CustomCollisionDispatcher(collisionConfiguration), new DbvtBroadphase(), new SequentialImpulseConstraintSolver(), collisionConfiguration);
 
         javax.vecmath.Vector3f g = new javax.vecmath.Vector3f(gravity.x, gravity.y, gravity.z);
         world.setGravity(g);
@@ -33,8 +31,8 @@ public class DiscreteDynamicsWorldComponent extends Component {
     }
 
     @Override
-    public void update(float dt) {
-        world.stepSimulation(dt);
+    public void fixedUpdate() {
+        world.stepSimulation(1.0f / 60.0f);
     }
 
     //we have to use postDestroyed or the world could be destroyed before removing all RigidBody's
